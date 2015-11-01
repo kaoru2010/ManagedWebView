@@ -1,0 +1,23 @@
+state_machine(:ManagedWebViewStateMachine, name:"mStateMachine") {
+    def_public_event :onPageStarted => [:url => :String]
+    def_public_event :onReceivedError => [:failingUrl => :String]
+    def_public_event :onPageFinished => [:url => :String]
+    def_public_event :onLoadResource => [:url => :String]
+    def_event :onDraw => [:canvas => :Canvas]
+
+    state(:NORMAL, entry:'setFailingUrl(null);') {
+        onReceivedError :LOADING_ERROR_PAGE, action:'setFailingUrl(failingUrl);'
+        onDraw nil, action:'handleOnDraw(canvas);'
+    }
+
+    state(:LOADING_ERROR_PAGE) {
+        onLoadResource :ERROR, if:'"file:///android_asset/webkit/android-weberror.png".equals(url)'
+        onPageFinished :ERROR, if:'isFailingUrl(url)'
+        onPageStarted :NORMAL, if:'!isFailingUrl(url)'
+    }
+
+    state(:ERROR) {
+        onPageStarted :NORMAL
+        onDraw nil, action:'skipOnDraw(canvas);'
+    }
+}
